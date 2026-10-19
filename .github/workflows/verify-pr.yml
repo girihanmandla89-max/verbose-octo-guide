@@ -1,0 +1,51 @@
+name: NextHyke PR Quality & Hardware Bounds Gate
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-schema-and-bounds:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate Hardware Specification Schema
+        run: |
+          node -e "
+            const fs = require('fs');
+            const spec = JSON.parse(fs.readFileSync('hardware_spec.json', 'utf8'));
+            if (!spec.compute || !spec.compute.cpu || !spec.compute.gpu_primary) {
+              console.error('Invalid hardware_spec.json structure');
+              process.exit(1);
+            }
+            if (spec.compute.cpu.max_worker_threads > 3) {
+              console.error('Violated CPU thread limit (> 3 threads)');
+              process.exit(1);
+            }
+            if (spec.compute.gpu_primary.max_vram_budget_mb > 1400) {
+              console.error('Violated VRAM budget (> 1400 MB)');
+              process.exit(1);
+            }
+            console.log('Hardware specification schema & bounds check passed.');
+          "
+
+      - name: Verify No Legacy Project Names
+        run: |
+          powershell -Command "
+            `$forbidden = @('deepface', 'roop', 'facefusion', 'deepfacelab');
+            `$matches = Get-ChildItem -Path . -Recurse -Exclude .git, node_modules, runtime, models | Select-String -Pattern (`$forbidden -join '|') -CaseSensitive:`$false;
+            if (`$matches) {
+              Write-Error 'Found forbidden legacy project name references in repository';
+              `$matches | Select-Object -First 10 | ForEach-Object { Write-Host `$_.Line };
+              exit 1;
+            } else {
+              Write-Host 'Naming integrity check passed: NextHyke sole product name validated.';
+            }
+          "
