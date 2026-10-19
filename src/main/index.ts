@@ -6,12 +6,16 @@ import { IpcController, CommandType } from './ipc-controller';
 import { ProcessSupervisor } from './process-supervisor';
 import { HotkeyManager } from './hotkey-manager';
 import { TrayController } from './tray-controller';
+import { LicenseController } from './licensing/license-controller';
+import { HardwareFingerprinter } from './licensing/hardware-fingerprint';
 
 let mainWindow: BrowserWindow | null = null;
 let ipcController: IpcController | null = null;
 let supervisor: ProcessSupervisor | null = null;
 let hotkeyManager: HotkeyManager | null = null;
 let trayController: TrayController | null = null;
+let licenseController: LicenseController | null = null;
+
 
 async function createWindow() {
     mainWindow = new BrowserWindow({
@@ -64,12 +68,16 @@ async function initializeApp() {
     const sessionPid = process.pid;
     console.log(`[Main] Initializing NextHyke Desktop Core with Session PID: ${sessionPid}`);
 
+    // 0. Initialize Licensing & Anti-Tamper Controller (Phase 7)
+    licenseController = new LicenseController(app.getPath('userData'));
+
     // 1. Initialize Named Pipe Server
     ipcController = new IpcController(sessionPid);
     await ipcController.start();
 
     // 2. Initialize Process Supervisor
     supervisor = new ProcessSupervisor(sessionPid);
+
 
     supervisor.on('worker-log', (msg) => {
         if (mainWindow) {
@@ -148,6 +156,26 @@ async function initializeApp() {
     ipcMain.handle('app:version', () => {
         return app.getVersion();
     });
+
+    // Phase 7: Licensing & Anti-Tamper Security IPC Handlers
+    ipcMain.handle('license:status', () => {
+        if (!licenseController) {
+            return { active: false, tier: 'none', error: 'Licensing subsystem not initialized' };
+        }
+        return licenseController.getStatus();
+    });
+
+    ipcMain.handle('license:activate', (_event, token: string) => {
+        if (!licenseController) {
+            return { valid: false, error: 'Licensing subsystem not initialized' };
+        }
+        return licenseController.activateLicense(token);
+    });
+
+    ipcMain.handle('license:fingerprint', () => {
+        return HardwareFingerprinter.getFingerprint();
+    });
+
 
 
     // Native Dialog Handlers
