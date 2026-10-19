@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NextHyke: AI Video Engine & Virtual Camera</title>
     <link rel="stylesheet" href="styles/index.css">
+    <link rel="stylesheet" href="styles/wizard.css">
+    <link rel="stylesheet" href="styles/command-palette.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="dark-theme">
+<body class="theme-dark">
     <div class="app-container">
         <!-- Top Navigation Bar -->
         <header class="app-header">
@@ -18,6 +20,9 @@
                 <h1 class="brand-title">AI Video Engine & Virtual Camera</h1>
             </div>
             <div class="header-status">
+                <button class="btn btn-secondary btn-sm" id="btn-open-palette" title="Open Command Palette (Ctrl+K)">
+                    <kbd>Ctrl+K</kbd> Commands
+                </button>
                 <div class="status-indicator">
                     <span class="status-dot" id="worker-status-dot"></span>
                     <span class="status-label" id="worker-status-text">Connecting to Native Engine...</span>
@@ -33,71 +38,40 @@
         <main class="app-main">
             <!-- Left Panel: Guided Wizard Pipeline -->
             <section class="wizard-panel">
-                <div class="wizard-steps-nav">
-                    <div class="step-nav-item active" data-step="1">
+                <nav class="wizard-steps-nav" aria-label="Wizard Steps">
+                    <div class="step-nav-item active" data-step="1" id="nav-step-1">
                         <span class="step-num">1</span>
                         <div class="step-info">
                             <span class="step-name">Reference Photo</span>
                             <span class="step-status">Select & verify</span>
                         </div>
                     </div>
-                    <div class="step-nav-item" data-step="2">
+                    <div class="step-nav-item" data-step="2" id="nav-step-2">
                         <span class="step-num">2</span>
                         <div class="step-info">
                             <span class="step-name">Video Source</span>
                             <span class="step-status">Webcam / Video</span>
                         </div>
                     </div>
-                    <div class="step-nav-item" data-step="3">
+                    <div class="step-nav-item" data-step="3" id="nav-step-3">
                         <span class="step-num">3</span>
                         <div class="step-info">
-                            <span class="step-name">Live Preview</span>
+                            <span class="step-name">Pre-Flight</span>
+                            <span class="step-status">Diagnostics check</span>
+                        </div>
+                    </div>
+                    <div class="step-nav-item" data-step="4" id="nav-step-4">
+                        <span class="step-num">4</span>
+                        <div class="step-info">
+                            <span class="step-name">Live Dashboard</span>
                             <span class="step-status">Side-by-side feed</span>
                         </div>
                     </div>
-                    <div class="step-nav-item" data-step="4">
-                        <span class="step-num">4</span>
-                        <div class="step-info">
-                            <span class="step-name">Virtual Camera</span>
-                            <span class="step-status">Stream to Teams/Zoom</span>
-                        </div>
-                    </div>
-                </div>
+                </nav>
 
-                <!-- Step Content Container -->
+                <!-- Dynamic Step Content Viewport -->
                 <div class="step-content-viewport" id="step-viewport">
-                    <div class="welcome-card">
-                        <h2>Phase 2: Native IPC Core & Memory Bridge Operational</h2>
-                        <p class="subtitle">Win32 Named Pipe server and 24.8 MB triple-buffered shared memory arena are active and synchronized.</p>
-                        
-                        <div class="telemetry-grid">
-                            <div class="telemetry-card">
-                                <span class="telem-title">IPC Pipe Channel</span>
-                                <span class="telem-value highlight" id="pipe-status">Active</span>
-                                <span class="telem-sub">\\.\pipe\NextHyke_Control</span>
-                            </div>
-                            <div class="telemetry-card">
-                                <span class="telem-title">Shared Memory Ring</span>
-                                <span class="telem-value highlight" id="shm-status">24.88 MB</span>
-                                <span class="telem-sub">Triple-buffered 1080p Arena</span>
-                            </div>
-                            <div class="telemetry-card">
-                                <span class="telem-title">Round-Trip Latency</span>
-                                <span class="telem-value highlight" id="ipc-latency">&lt; 0.1 ms</span>
-                                <span class="telem-sub">Overlapped Win32 I/O</span>
-                            </div>
-                            <div class="telemetry-card">
-                                <span class="telem-title">Inference Engine</span>
-                                <span class="telem-value highlight" id="silicon-target">NVIDIA MX450</span>
-                                <span class="telem-sub">3 Intra-op CPU Threads</span>
-                            </div>
-                        </div>
-
-                        <div class="action-bar">
-                            <button class="btn btn-primary" id="btn-ping-worker">Test Worker Heartbeat</button>
-                            <span class="ping-result" id="ping-result-text">Waiting for test...</span>
-                        </div>
-                    </div>
+                    <!-- Populated dynamically by renderer.js -->
                 </div>
             </section>
         </main>

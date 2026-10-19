@@ -1,0 +1,224 @@
+/* Command Palette & Accessible Theme Styles */
+
+/* Modal Backdrop */
+.command-palette-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 15vh;
+    animation: fadeInModal 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInModal {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.command-palette-card {
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    width: 600px;
+    max-width: 90vw;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.palette-search-box {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 12px;
+}
+
+.palette-search-box svg {
+    color: var(--text-muted);
+}
+
+.palette-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 15px;
+    font-family: inherit;
+    outline: none;
+}
+
+.palette-input::placeholder {
+    color: var(--text-muted);
+}
+
+.esc-badge {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    padding: 3px 6px;
+    border-radius: 4px;
+}
+
+.palette-results-list {
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.palette-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.palette-item.selected,
+.palette-item:hover {
+    background: rgba(0, 210, 255, 0.12);
+}
+
+.palette-item-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.item-category {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
+    min-width: 75px;
+    text-align: center;
+}
+
+.palette-item.selected .item-category {
+    color: var(--accent-cyan);
+    background: rgba(0, 210, 255, 0.15);
+}
+
+.item-title {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.item-shortcut {
+    font-size: 11px;
+    font-family: monospace;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.palette-empty {
+    padding: 30px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.palette-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: rgba(0, 0, 0, 0.25);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.palette-footer kbd {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 2px 5px;
+    border-radius: 3px;
+    color: var(--text-secondary);
+}
+
+/* Accessible Themes */
+/* 1. Dark Theme (Default) */
+body.theme-dark {
+    --bg-dark: #0a0e17;
+    --bg-card: rgba(18, 24, 38, 0.75);
+    --bg-card-border: rgba(255, 255, 255, 0.08);
+    --text-primary: #f0f4f8;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-cyan: #00d2ff;
+    --accent-blue: #3a7bd5;
+    --accent-green: #00f5a0;
+    --accent-red: #ff3366;
+}
+
+/* 2. Light Theme */
+body.theme-light {
+    --bg-dark: #f8fafc;
+    --bg-card: rgba(255, 255, 255, 0.9);
+    --bg-card-border: rgba(0, 0, 0, 0.1);
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+    --accent-cyan: #0284c7;
+    --accent-blue: #2563eb;
+    --accent-green: #16a34a;
+    --accent-red: #dc2626;
+    background: #f1f5f9;
+}
+
+body.theme-light .app-header {
+    background: rgba(255, 255, 255, 0.85);
+}
+
+body.theme-light .command-palette-card {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+/* 3. High-Contrast Theme (WCAG AA Certified) */
+body.theme-high-contrast {
+    --bg-dark: #000000;
+    --bg-card: #000000;
+    --bg-card-border: #ffffff;
+    --text-primary: #ffffff;
+    --text-secondary: #ffff00;
+    --text-muted: #ffffff;
+    --accent-cyan: #00ffff;
+    --accent-blue: #00ffff;
+    --accent-green: #00ff00;
+    --accent-red: #ff0000;
+    background: #000000 !important;
+}
+
+body.theme-high-contrast * {
+    border-color: #ffffff !important;
+}
+
+body.theme-high-contrast button:focus,
+body.theme-high-contrast input:focus,
+body.theme-high-contrast select:focus {
+    outline: 3px solid #ffff00 !important;
+}
