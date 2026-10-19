@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "project": "NextHyke",
+  "version": "1.0.0",
+  "target_machine": {
+    "manufacturer": "HP",
+    "model": "HP Pavilion Laptop 15-eg0xxx",
+    "sku": "2N1K6PA#ACJ",
+    "os": "Windows 11 Home Single Language",
+    "os_build": "26200.5050",
+    "hal": "26100.1"
+  },
+  "compute": {
+    "cpu": {
+      "model": "11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz",
+      "architecture": "x86_64",
+      "physical_cores": 4,
+      "logical_threads": 8,
+      "max_worker_threads": 3,
+      "instruction_sets": [
+        "AVX-512",
+        "VNNI",
+        "FMA",
+        "SSE4.2"
+      ],
+      "thread_policy": "Hard cap at <= 3 threads. Core 0 reserved for Electron UI and Windows DWM compositor."
+    },
+    "gpu_primary": {
+      "name": "NVIDIA GeForce MX450",
+      "architecture": "Turing TU117",
+      "compute_capability": 7.5,
+      "driver_version": "32.0.15.9282",
+      "total_vram_mb": 2048,
+      "max_vram_budget_mb": 1400,
+      "headroom_reserved_mb": 648,
+      "role": "Primary AI Inference Engine (CUDA / TensorRT)"
+    },
+    "gpu_secondary": {
+      "name": "Intel(R) Iris(R) Xe Graphics",
+      "shared_memory_mb": 8114,
+      "execution_provider": "OpenVINOExecutionProvider",
+      "role": "Dynamic Fallback Processor (Triggers when MX450 VRAM utilization exceeds 92%)"
+    },
+    "ram": {
+      "total_physical_mb": 16229,
+      "baseline_os_active_mb": 12100,
+      "max_working_set_mb": 1200,
+      "max_ui_idle_mb": 110,
+      "min_free_ram_for_preflight_mb": 2500,
+      "max_memory_growth_rate_mb_per_hr": 1.0
+    }
+  },
+  "virtual_camera": {
+    "friendly_name": "NextHyke Processed Camera",
+    "source_type": "IMFVirtualCamera / IMFMediaSource",
+    "access_level": "MFVirtualCameraAccess_CurrentUser",
+    "lifetime": "MFVirtualCameraLifetime_Session",
+    "publishing_clock_fps": 30.0,
+    "inference_sustainable_fps_range": [
+      10.0,
+      18.0
+    ]
+  },
+  "ipc": {
+    "named_pipe_pattern": "\\\\.\\pipe\\NextHyke_Control_<PID>",
+    "shared_memory_arena_size_mb": 24.8,
+    "buffer_count": 3,
+    "frame_dimensions": {
+      "width": 1920,
+      "height": 1080,
+      "format": "RGBA32",
+      "bytes_per_frame": 8294400
+    },
+    "max_acceptable_transfer_latency_ms": 2.0
+  }
+}
