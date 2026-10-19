@@ -1,0 +1,7 @@
+# NextHyke Runtime Dependencies (Locked Binary Wheels)
+# Target: Windows 11 x64, Python 3.10.x, NVIDIA GeForce MX450 (CUDA 11/12)
+
+numpy==1.26.4
+protobuf==4.25.3
+opencv-python-headless==4.9.0.80
+onnxruntime-gpu==1.17.1
