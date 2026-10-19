@@ -1,0 +1,142 @@
+"""
+NextHyke Python Inference Worker Process
+Communicates with Electron Main Process via Win32 Named Pipe and Shared Memory Ring.
+"""
+
+import argparse
+import sys
+import os
+import time
+import signal
+from typing import Optional
+
+# Ensure package root is in sys.path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
+from src.engine.ipc.pipe_client import NamedPipeClient, PIPE_MAGIC
+from src.engine.ipc.shared_memory import SharedMemoryRing
+
+# Command definitions matching Native & TypeScript definitions
+CMD_INIT = 1
+CMD_LOAD_MODELS = 2
+CMD_START_STREAM = 3
+CMD_STOP_STREAM = 4
+CMD_GET_TELEMETRY = 5
+CMD_HEARTBEAT = 6
+CMD_SHUTDOWN = 99
+
+
+class InferenceWorker:
+    def __init__(self, session_pid: int):
+        self.session_pid = session_pid
+        self.pipe = NamedPipeClient(session_pid)
+        self.shm: Optional[SharedMemoryRing] = None
+        self.is_running = True
+        self.is_streaming = False
+        self.frames_processed = 0
+        self.start_time = time.time()
+
+    def run(self):
+        print(f"[Worker] Starting NextHyke Inference Worker for PID {self.session_pid}...", flush=True)
+
+        # Connect to Named Pipe
+        if not self.pipe.connect(timeout_sec=5.0):
+            print(f"[Worker] Failed to connect to pipe for PID {self.session_pid}. Exiting.", flush=True)
+            sys.exit(1)
+
+        print(f"[Worker] Connected to NextHyke Named Pipe successfully.", flush=True)
+
+        # Initialize Shared Memory
+        self.shm = SharedMemoryRing(self.session_pid, is_creator=False)
+        if not self.shm.initialize():
+            print(f"[Worker] Failed to attach to Shared Memory ring.", flush=True)
+
+        # Command loop
+        while self.is_running:
+            packet = self.pipe.read_packet()
+            if not packet:
+                # Pipe disconnected or broken
+                print("[Worker] Pipe connection lost. Initiating shutdown.", flush=True)
+                break
+
+            cmd_id, payload = packet
+            self.handle_command(cmd_id, payload)
+
+        self.cleanup()
+
+    def handle_command(self, cmd_id: int, payload: dict):
+        if cmd_id == CMD_INIT:
+            self.pipe.send_packet(cmd_id, {
+                "status": "ready",
+                "version": "1.0.0",
+                "session_pid": self.session_pid
+            })
+
+        elif cmd_id == CMD_LOAD_MODELS:
+            # Acknowledge model load request
+            self.pipe.send_packet(cmd_id, {
+                "status": "models_loaded",
+                "execution_provider": "CUDAExecutionProvider"
+            })
+
+        elif cmd_id == CMD_START_STREAM:
+            self.is_streaming = True
+            self.pipe.send_packet(cmd_id, {
+                "status": "streaming_started"
+            })
+
+        elif cmd_id == CMD_STOP_STREAM:
+            self.is_streaming = False
+            self.pipe.send_packet(cmd_id, {
+                "status": "streaming_stopped"
+            })
+
+        elif cmd_id == CMD_GET_TELEMETRY:
+            uptime = time.time() - self.start_time
+            fps = self.frames_processed / max(uptime, 0.001)
+            self.pipe.send_packet(cmd_id, {
+                "status": "ok",
+                "frames_processed": self.frames_processed,
+                "fps": round(fps, 2),
+                "uptime_seconds": round(uptime, 1)
+            })
+
+        elif cmd_id == CMD_HEARTBEAT:
+            self.pipe.send_packet(cmd_id, {
+                "status": "pong",
+                "timestamp_ms": int(time.time() * 1000)
+            })
+
+        elif cmd_id == CMD_SHUTDOWN:
+            print("[Worker] Received CMD_SHUTDOWN. Terminating cleanly.", flush=True)
+            self.pipe.send_packet(cmd_id, {"status": "shutting_down"})
+            self.is_running = False
+
+    def cleanup(self):
+        print("[Worker] Cleaning up worker resources...", flush=True)
+        if self.shm:
+            self.shm.close()
+        if self.pipe:
+            self.pipe.close()
+        print("[Worker] Worker shutdown complete.", flush=True)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="NextHyke Inference Worker")
+    parser.add_argument("--pipe-pid", type=int, required=True, help="Host session PID for Named Pipe & SHM")
+    args = parser.parse_args()
+
+    worker = InferenceWorker(args.pipe_pid)
+
+    def sig_handler(sig, frame):
+        worker.cleanup()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, sig_handler)
+    signal.signal(signal.SIGTERM, sig_handler)
+
+    worker.run()
+
+
+if __name__ == "__main__":
+    main()

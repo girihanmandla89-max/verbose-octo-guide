@@ -1,0 +1,31 @@
+{
+  "name": "nexthyke",
+  "version": "1.0.0",
+  "description": "NextHyke: Standalone Windows 11 AI Desktop Video Processing & Virtual Camera",
+  "main": "dist/src/main/index.js",
+  "scripts": {
+    "build:tsc": "tsc",
+    "build": "tsc",
+    "dev": "tsc && electron .",
+    "start": "electron .",
+    "test:ipc": "node dist/tests/test_ipc_stress.js",
+    "test:shm": ".\\runtime\\python.exe tests/test_shm_stress.py",
+    "test:supervisor": "node dist/tests/test_supervisor_lifecycle.js",
+    "test:electron": "node dist/tests/test_electron_launch.js",
+    "test:all": "tsc && node dist/tests/test_ipc_stress.js && .\\runtime\\python.exe tests/test_shm_stress.py && node dist/tests/test_supervisor_lifecycle.js && node dist/tests/test_electron_launch.js"
+  },
+  "keywords": [
+    "nexthyke",
+    "virtual-camera",
+    "ai",
+    "onnx",
+    "electron"
+  ],
+  "author": "NextHyke Engineering",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "electron": "^30.0.0",
+    "typescript": "^5.3.3"
+  }
+}
