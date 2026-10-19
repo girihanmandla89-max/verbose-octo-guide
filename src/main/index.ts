@@ -8,6 +8,7 @@ import { HotkeyManager } from './hotkey-manager';
 import { TrayController } from './tray-controller';
 import { LicenseController } from './licensing/license-controller';
 import { HardwareFingerprinter } from './licensing/hardware-fingerprint';
+import { TelemetryManager } from './telemetry';
 
 let mainWindow: BrowserWindow | null = null;
 let ipcController: IpcController | null = null;
@@ -15,6 +16,8 @@ let supervisor: ProcessSupervisor | null = null;
 let hotkeyManager: HotkeyManager | null = null;
 let trayController: TrayController | null = null;
 let licenseController: LicenseController | null = null;
+let telemetryManager: TelemetryManager | null = null;
+
 
 
 async function createWindow() {
@@ -68,11 +71,13 @@ async function initializeApp() {
     const sessionPid = process.pid;
     console.log(`[Main] Initializing NextHyke Desktop Core with Session PID: ${sessionPid}`);
 
-    // 0. Initialize Licensing & Anti-Tamper Controller (Phase 7)
+    // 0. Initialize Licensing & Telemetry Controllers (Phase 7 & 8)
     licenseController = new LicenseController(app.getPath('userData'));
+    telemetryManager = new TelemetryManager(app.getPath('userData'));
 
     // 1. Initialize Named Pipe Server
     ipcController = new IpcController(sessionPid);
+
     await ipcController.start();
 
     // 2. Initialize Process Supervisor
@@ -175,6 +180,19 @@ async function initializeApp() {
     ipcMain.handle('license:fingerprint', () => {
         return HardwareFingerprinter.getFingerprint();
     });
+
+    // Phase 8: Privacy-Preserving Telemetry Consent IPC Handlers
+    ipcMain.handle('telemetry:get-consent', () => {
+        return telemetryManager ? telemetryManager.getConsentStatus() : 'declined';
+    });
+
+    ipcMain.handle('telemetry:set-consent', (_event, accepted: boolean) => {
+        if (telemetryManager) {
+            telemetryManager.setConsent(accepted);
+        }
+        return true;
+    });
+
 
 
 

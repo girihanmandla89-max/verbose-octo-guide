@@ -35,6 +35,8 @@ export interface NextHykeAPI {
     getLicenseStatus: () => Promise<any>;
     activateLicense: (token: string) => Promise<any>;
     getMachineFingerprint: () => Promise<any>;
+    getTelemetryConsent: () => Promise<string>;
+    setTelemetryConsent: (accepted: boolean) => Promise<void>;
 }
 
 const api: NextHykeAPI = {
@@ -64,8 +66,11 @@ const api: NextHykeAPI = {
     },
     getLicenseStatus: () => ipcRenderer.invoke('license:status'),
     activateLicense: (token: string) => ipcRenderer.invoke('license:activate', token),
-    getMachineFingerprint: () => ipcRenderer.invoke('license:fingerprint')
+    getMachineFingerprint: () => ipcRenderer.invoke('license:fingerprint'),
+    getTelemetryConsent: () => ipcRenderer.invoke('telemetry:get-consent'),
+    setTelemetryConsent: (accepted: boolean) => ipcRenderer.invoke('telemetry:set-consent', accepted)
 };
+
 
 
 
