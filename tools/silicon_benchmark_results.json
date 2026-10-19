@@ -1,0 +1,28 @@
+{
+  "CUDAExecutionProvider": {
+    "requested_provider": "CUDAExecutionProvider",
+    "active_provider": "CPUExecutionProvider",
+    "iterations": 300,
+    "init_ms": 18.34,
+    "median_latency_ms": 0.109,
+    "p95_latency_ms": 0.161,
+    "unique_fps": 9212.3,
+    "peak_vram_mb": 0,
+    "total_vram_mb": 2048,
+    "vram_ceiling_met": true,
+    "threads_used": 3
+  },
+  "CPUExecutionProvider": {
+    "requested_provider": "CPUExecutionProvider",
+    "active_provider": "CPUExecutionProvider",
+    "iterations": 300,
+    "init_ms": 1.87,
+    "median_latency_ms": 0.124,
+    "p95_latency_ms": 0.207,
+    "unique_fps": 8064.5,
+    "peak_vram_mb": 0,
+    "total_vram_mb": 2048,
+    "vram_ceiling_met": true,
+    "threads_used": 3
+  }
+}
