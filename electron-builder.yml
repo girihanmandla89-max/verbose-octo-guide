@@ -1,0 +1,41 @@
+appId: com.nexthyke.desktop
+productName: NextHyke
+copyright: "Copyright (c) 2026 NextHyke Engineering"
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - "dist/**/*"
+  - "src/renderer/**/*"
+  - "package.json"
+
+extraResources:
+  - from: "runtime"
+    to: "runtime"
+    filter:
+      - "**/*"
+      - "!**/__pycache__/*"
+  - from: "assets"
+    to: "assets"
+  - from: "models"
+    to: "models"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: assets/icons/tray-idle.ico
+  artifactName: "NextHyke-Setup-${version}.${ext}"
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: "NextHyke"
+  uninstallDisplayName: "NextHyke"
+  include: "build/installer.nsh"
