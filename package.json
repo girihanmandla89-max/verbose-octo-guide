@@ -14,7 +14,8 @@
     "test:electron": "node dist/tests/test_electron_launch.js",
     "test:wizard": "node dist/tests/test_wizard_flow.js",
     "test:pipeline": ".\\runtime\\python.exe tests/test_pipeline_qualification.py",
-    "test:all": "tsc && node dist/tests/test_ipc_stress.js && .\\runtime\\python.exe tests/test_shm_stress.py && node dist/tests/test_supervisor_lifecycle.js && node dist/tests/test_wizard_flow.js && .\\runtime\\python.exe tests/test_pipeline_qualification.py && node dist/tests/test_electron_launch.js"
+    "test:vcam": ".\\runtime\\python.exe tests/test_virtual_camera_stream.py",
+    "test:all": "tsc && node dist/tests/test_ipc_stress.js && .\\runtime\\python.exe tests/test_shm_stress.py && node dist/tests/test_supervisor_lifecycle.js && node dist/tests/test_wizard_flow.js && .\\runtime\\python.exe tests/test_pipeline_qualification.py && .\\runtime\\python.exe tests/test_virtual_camera_stream.py && node dist/tests/test_electron_launch.js"
   },
   "keywords": [
     "nexthyke",
