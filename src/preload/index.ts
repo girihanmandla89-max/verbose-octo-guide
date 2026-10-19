@@ -32,6 +32,9 @@ export interface NextHykeAPI {
     getTrayStatus: () => Promise<{ isStreaming: boolean }>;
     getCaptureTransparency: () => Promise<{ affinity: string; value: number; captureTransparent: boolean; contentProtection: boolean }>;
     onStreamStopped: (callback: () => void) => void;
+    getLicenseStatus: () => Promise<any>;
+    activateLicense: (token: string) => Promise<any>;
+    getMachineFingerprint: () => Promise<any>;
 }
 
 const api: NextHykeAPI = {
@@ -58,8 +61,12 @@ const api: NextHykeAPI = {
     getCaptureTransparency: () => ipcRenderer.invoke('system:get-capture-transparency'),
     onStreamStopped: (callback) => {
         ipcRenderer.on('stream:stopped', () => callback());
-    }
+    },
+    getLicenseStatus: () => ipcRenderer.invoke('license:status'),
+    activateLicense: (token: string) => ipcRenderer.invoke('license:activate', token),
+    getMachineFingerprint: () => ipcRenderer.invoke('license:fingerprint')
 };
+
 
 
 // Expose safe context bridge
