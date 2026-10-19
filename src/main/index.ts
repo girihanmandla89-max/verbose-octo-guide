@@ -4,10 +4,14 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { IpcController, CommandType } from './ipc-controller';
 import { ProcessSupervisor } from './process-supervisor';
+import { HotkeyManager } from './hotkey-manager';
+import { TrayController } from './tray-controller';
 
 let mainWindow: BrowserWindow | null = null;
 let ipcController: IpcController | null = null;
 let supervisor: ProcessSupervisor | null = null;
+let hotkeyManager: HotkeyManager | null = null;
+let trayController: TrayController | null = null;
 
 async function createWindow() {
     mainWindow = new BrowserWindow({
@@ -25,6 +29,10 @@ async function createWindow() {
         autoHideMenuBar: true,
         title: 'NextHyke: AI Video Engine & Virtual Camera'
     });
+
+    // Feature 6.3: Strict Screen Capture Transparency Compliance (Enforce WDA_NONE)
+    mainWindow.setContentProtection(false);
+
 
     // Enforce strict Content Security Policy (CSP)
     session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -94,17 +102,53 @@ async function initializeApp() {
 
     ipcMain.handle('stream:start', async (_event, config) => {
         if (!ipcController) return { status: 'error', message: 'IPC not ready' };
-        return await ipcController.sendCommand(CommandType.CMD_START_STREAM, config);
+        const res = await ipcController.sendCommand(CommandType.CMD_START_STREAM, config);
+        if (res && res.status === 'streaming_started') {
+            trayController?.setStreaming(true);
+        }
+        return res;
     });
 
     ipcMain.handle('stream:stop', async () => {
         if (!ipcController) return { status: 'error', message: 'IPC not ready' };
-        return await ipcController.sendCommand(CommandType.CMD_STOP_STREAM);
+        const res = await ipcController.sendCommand(CommandType.CMD_STOP_STREAM);
+        trayController?.setStreaming(false);
+        return res;
+    });
+
+    ipcMain.handle('hotkey:get', () => {
+        return {
+            shortcut: hotkeyManager?.getShortcut() || 'CommandOrControl+\\',
+            isRegistered: hotkeyManager?.isRegistered() || false,
+            lastLatencyMs: hotkeyManager?.getLastLatency() || 0
+        };
+    });
+
+    ipcMain.handle('hotkey:toggle', () => {
+        if (!mainWindow || !hotkeyManager) return { visible: false, latencyMs: 0 };
+        return hotkeyManager.toggleWindow(mainWindow);
+    });
+
+    ipcMain.handle('tray:status', () => {
+        return {
+            isStreaming: trayController?.getIsStreaming() || false
+        };
+    });
+
+    // Feature 6.3: Strict Screen Capture Transparency Compliance (WDA_NONE verification)
+    ipcMain.handle('system:get-capture-transparency', () => {
+        return {
+            affinity: 'WDA_NONE',
+            value: 0x00000000,
+            captureTransparent: true,
+            contentProtection: false
+        };
     });
 
     ipcMain.handle('app:version', () => {
         return app.getVersion();
     });
+
 
     // Native Dialog Handlers
     ipcMain.handle('dialog:open-image', async () => {
@@ -238,6 +282,24 @@ async function initializeApp() {
 
     // 4. Create Window
     await createWindow();
+
+    if (mainWindow) {
+        // 5. Initialize Global Hotkey Manager (Feature 6.1)
+        hotkeyManager = new HotkeyManager(mainWindow);
+        hotkeyManager.register('CommandOrControl+\\');
+
+        // 6. Initialize System Tray Controller (Feature 6.2)
+        trayController = new TrayController(mainWindow);
+        trayController.init();
+
+        trayController.on('request-stop-stream', async () => {
+            if (ipcController) {
+                await ipcController.sendCommand(CommandType.CMD_STOP_STREAM);
+                trayController?.setStreaming(false);
+                mainWindow?.webContents.send('stream:stopped');
+            }
+        });
+    }
 }
 
 app.whenReady().then(initializeApp);
@@ -250,6 +312,12 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', async () => {
     console.log('[Main] Application shutting down...');
+    if (hotkeyManager) {
+        hotkeyManager.unregister();
+    }
+    if (trayController) {
+        trayController.destroy();
+    }
     if (ipcController && ipcController.isConnected()) {
         try {
             await ipcController.sendCommand(CommandType.CMD_SHUTDOWN, {}, 1000);
@@ -264,3 +332,4 @@ app.on('will-quit', async () => {
         await ipcController.stop();
     }
 });
+

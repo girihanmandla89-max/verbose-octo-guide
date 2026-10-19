@@ -27,6 +27,11 @@ export interface NextHykeAPI {
     getPreflightStatus: () => Promise<PreflightStatus>;
     loadSettings: () => Promise<any>;
     saveSettings: (settings: any) => Promise<boolean>;
+    getHotkeyInfo: () => Promise<{ shortcut: string; isRegistered: boolean; lastLatencyMs: number }>;
+    toggleWindowVisibility: () => Promise<{ visible: boolean; latencyMs: number }>;
+    getTrayStatus: () => Promise<{ isStreaming: boolean }>;
+    getCaptureTransparency: () => Promise<{ affinity: string; value: number; captureTransparent: boolean; contentProtection: boolean }>;
+    onStreamStopped: (callback: () => void) => void;
 }
 
 const api: NextHykeAPI = {
@@ -46,8 +51,16 @@ const api: NextHykeAPI = {
     openVideoDialog: () => ipcRenderer.invoke('dialog:open-video'),
     getPreflightStatus: () => ipcRenderer.invoke('system:preflight'),
     loadSettings: () => ipcRenderer.invoke('settings:load'),
-    saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings)
+    saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings),
+    getHotkeyInfo: () => ipcRenderer.invoke('hotkey:get'),
+    toggleWindowVisibility: () => ipcRenderer.invoke('hotkey:toggle'),
+    getTrayStatus: () => ipcRenderer.invoke('tray:status'),
+    getCaptureTransparency: () => ipcRenderer.invoke('system:get-capture-transparency'),
+    onStreamStopped: (callback) => {
+        ipcRenderer.on('stream:stopped', () => callback());
+    }
 };
+
 
 // Expose safe context bridge
 contextBridge.exposeInMainWorld('nextHykeAPI', api);
