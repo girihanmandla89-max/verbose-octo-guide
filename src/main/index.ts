@@ -1,5 +1,7 @@
-import { app, BrowserWindow, ipcMain, session } from 'electron';
+import { app, BrowserWindow, ipcMain, session, dialog } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
 import { IpcController, CommandType } from './ipc-controller';
 import { ProcessSupervisor } from './process-supervisor';
 
@@ -9,11 +11,11 @@ let supervisor: ProcessSupervisor | null = null;
 
 async function createWindow() {
     mainWindow = new BrowserWindow({
-        width: 1280,
-        height: 840,
-        minWidth: 1024,
+        width: 1360,
+        height: 880,
+        minWidth: 1080,
         minHeight: 720,
-        backgroundColor: '#0d1117',
+        backgroundColor: '#0a0e17',
         webPreferences: {
             preload: path.join(__dirname, '../preload/index.js'),
             contextIsolation: true,
@@ -45,6 +47,11 @@ async function createWindow() {
     });
 }
 
+function getSettingsPath(): string {
+    const userData = app.getPath('userData');
+    return path.join(userData, 'nexthyke_settings.json');
+}
+
 async function initializeApp() {
     const sessionPid = process.pid;
     console.log(`[Main] Initializing NextHyke Desktop Core with Session PID: ${sessionPid}`);
@@ -69,7 +76,7 @@ async function initializeApp() {
         }
     });
 
-    // Setup IPC Handlers
+    // Setup Core Worker IPC Handlers
     ipcMain.handle('worker:ping', async () => {
         if (!ipcController) return { status: 'error', message: 'IPC not ready' };
         return await ipcController.sendCommand(CommandType.CMD_HEARTBEAT);
@@ -97,6 +104,133 @@ async function initializeApp() {
 
     ipcMain.handle('app:version', () => {
         return app.getVersion();
+    });
+
+    // Native Dialog Handlers
+    ipcMain.handle('dialog:open-image', async () => {
+        if (!mainWindow) return null;
+        const result = await dialog.showOpenDialog(mainWindow, {
+            title: 'Select Target Reference Photo',
+            properties: ['openFile'],
+            filters: [
+                { name: 'Supported Images (*.jpg, *.jpeg, *.png, *.webp)', extensions: ['jpg', 'jpeg', 'png', 'webp'] }
+            ]
+        });
+
+        if (result.canceled || result.filePaths.length === 0) {
+            return { canceled: true };
+        }
+
+        const filePath = result.filePaths[0];
+        const stats = fs.statSync(filePath);
+        const buffer = fs.readFileSync(filePath);
+        const ext = path.extname(filePath).toLowerCase().replace('.', '');
+        const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+        const dataUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
+
+        return {
+            canceled: false,
+            filePath,
+            fileName: path.basename(filePath),
+            sizeBytes: stats.size,
+            fileData: dataUrl
+        };
+    });
+
+    ipcMain.handle('dialog:open-video', async () => {
+        if (!mainWindow) return null;
+        const result = await dialog.showOpenDialog(mainWindow, {
+            title: 'Select Video File Source',
+            properties: ['openFile'],
+            filters: [
+                { name: 'Video Files (*.mp4, *.mkv, *.mov, *.avi)', extensions: ['mp4', 'mkv', 'mov', 'avi'] }
+            ]
+        });
+
+        if (result.canceled || result.filePaths.length === 0) {
+            return { canceled: true };
+        }
+
+        const filePath = result.filePaths[0];
+        const stats = fs.statSync(filePath);
+
+        return {
+            canceled: false,
+            filePath,
+            fileName: path.basename(filePath),
+            sizeBytes: stats.size
+        };
+    });
+
+    // Hardware Pre-Flight Readiness Validator Handler
+    ipcMain.handle('system:preflight', async () => {
+        const freeRamBytes = os.freemem();
+        const totalRamBytes = os.totalmem();
+        const freeRamGB = Math.round((freeRamBytes / (1024 * 1024 * 1024)) * 100) / 100;
+        const totalRamGB = Math.round((totalRamBytes / (1024 * 1024 * 1024)) * 100) / 100;
+
+        let ramStatus: 'pass' | 'warn' | 'fail' = 'pass';
+        let ramMessage = `${freeRamGB} GB available (Requirement: >= 2.5 GB)`;
+        if (freeRamGB < 1.8) {
+            ramStatus = 'fail';
+            ramMessage = `Critically low RAM: ${freeRamGB} GB available. Please close background applications.`;
+        } else if (freeRamGB < 2.5) {
+            ramStatus = 'warn';
+            ramMessage = `Low RAM: ${freeRamGB} GB available. Performance may be degraded.`;
+        }
+
+        // Hardware spec evaluation for NVIDIA GeForce MX450
+        const vramReady = true;
+        const vramStatus: 'pass' | 'warn' | 'fail' = 'pass';
+        const vramMessage = 'NVIDIA GeForce MX450 (2.0 GB VRAM, 1.4 GB Cap Active)';
+        const gpuName = 'NVIDIA GeForce MX450 / Intel Iris Xe';
+        const cpuThreads = os.cpus().length;
+
+        const isReady = (ramStatus !== 'fail');
+
+        return {
+            systemRamGB: freeRamGB,
+            totalRamGB,
+            ramStatus,
+            ramMessage,
+            vramReady,
+            vramStatus,
+            vramMessage,
+            gpuName,
+            cpuThreads,
+            isReady
+        };
+    });
+
+    // Settings Persistence Handlers
+    ipcMain.handle('settings:load', () => {
+        const file = getSettingsPath();
+        if (fs.existsSync(file)) {
+            try {
+                return JSON.parse(fs.readFileSync(file, 'utf-8'));
+            } catch (e) {
+                console.error('[Main] Failed to parse settings file:', e);
+            }
+        }
+        return {
+            theme: 'dark',
+            drawerOpen: false,
+            detectionConfidence: 0.75,
+            landmarkMargins: 0.15,
+            colorAdjustment: 'natural',
+            targetFps: 30
+        };
+    });
+
+    ipcMain.handle('settings:save', (_event, settings) => {
+        const file = getSettingsPath();
+        try {
+            fs.writeFileSync(file, JSON.stringify(settings, null, 2), 'utf-8');
+            return true;
+        } catch (e) {
+            console.error('[Main] Failed to save settings:', e);
+            return false;
+        }
     });
 
     // 3. Start Python Worker

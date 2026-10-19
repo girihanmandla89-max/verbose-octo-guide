@@ -1,5 +1,18 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
+export interface PreflightStatus {
+    systemRamGB: number;
+    totalRamGB: number;
+    ramStatus: 'pass' | 'warn' | 'fail';
+    ramMessage: string;
+    vramReady: boolean;
+    vramStatus: 'pass' | 'warn' | 'fail';
+    vramMessage: string;
+    gpuName: string;
+    cpuThreads: number;
+    isReady: boolean;
+}
+
 export interface NextHykeAPI {
     pingWorker: () => Promise<{ status: string; timestamp_ms: number }>;
     getTelemetry: () => Promise<any>;
@@ -9,6 +22,11 @@ export interface NextHykeAPI {
     onWorkerStatus: (callback: (status: string) => void) => void;
     onTelemetryUpdate: (callback: (data: any) => void) => void;
     getAppVersion: () => Promise<string>;
+    openImageDialog: () => Promise<{ canceled: boolean; filePath?: string; fileData?: string; fileName?: string; sizeBytes?: number } | null>;
+    openVideoDialog: () => Promise<{ canceled: boolean; filePath?: string; fileName?: string; sizeBytes?: number } | null>;
+    getPreflightStatus: () => Promise<PreflightStatus>;
+    loadSettings: () => Promise<any>;
+    saveSettings: (settings: any) => Promise<boolean>;
 }
 
 const api: NextHykeAPI = {
@@ -23,7 +41,12 @@ const api: NextHykeAPI = {
     onTelemetryUpdate: (callback) => {
         ipcRenderer.on('worker:telemetry', (_event, data) => callback(data));
     },
-    getAppVersion: () => ipcRenderer.invoke('app:version')
+    getAppVersion: () => ipcRenderer.invoke('app:version'),
+    openImageDialog: () => ipcRenderer.invoke('dialog:open-image'),
+    openVideoDialog: () => ipcRenderer.invoke('dialog:open-video'),
+    getPreflightStatus: () => ipcRenderer.invoke('system:preflight'),
+    loadSettings: () => ipcRenderer.invoke('settings:load'),
+    saveSettings: (settings) => ipcRenderer.invoke('settings:save', settings)
 };
 
 // Expose safe context bridge
